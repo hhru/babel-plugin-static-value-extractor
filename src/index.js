@@ -32,7 +32,7 @@ const extractStaticValueFromCode = (code, opts = {}, cb = noop) => {
     traverse(ast, traverser);
 };
 
-const extractStaticValueFromFile = (file, opts = {}, cb = noop) => {
+export const extractStaticValueFromFile = (file, opts = {}, cb = noop) => {
     extractStaticValueFromCode(fs.readFileSync(file, ENCODING), {
         ...opts,
         filename: file,
