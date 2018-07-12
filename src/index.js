@@ -26,10 +26,12 @@ const BABEL_PARSING_OPTS = {
 const noop = () => {};
 
 const extractStaticValueFromCode = (code, opts = {}, cb = noop) => {
-    const ast = babylon.parse(code.toString(ENCODING), BABEL_PARSING_OPTS);
-    const traverser = getTraverser(cb, opts);
-
-    traverse(ast, traverser);
+    try {
+        const ast = babylon.parse(code.toString(ENCODING), BABEL_PARSING_OPTS);
+        const traverser = getTraverser(cb, opts);
+    
+        traverse(ast, traverser);
+    } catch (ignore) {}
 };
 
 export const extractStaticValueFromFile = (file, opts = {}, cb = noop) => {
