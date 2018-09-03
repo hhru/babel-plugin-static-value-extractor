@@ -20,6 +20,17 @@ export default (cb, opts = {}) => {
     const { staticPropName } = opts;
     const importDeclarationPaths = [];
     
+    const processImports = (filePath) => {
+        const defaultFileName = nodePath.parse(filePath).ext ? '' : 'index.jsx';
+        const importPath = nodePath.resolve(currentFileDir, filePath);
+    
+        if (fs.existsSync(importPath)) {
+            importDeclarationPaths.push(nodePath.resolve(importPath, defaultFileName));
+        } else if (fs.existsSync(`${importPath}.jsx`)) {
+            importDeclarationPaths.push(`${importPath}.jsx`);
+        }
+    };
+    
     return {
         Program: {
             exit() {
@@ -79,16 +90,17 @@ export default (cb, opts = {}) => {
         ImportDeclaration: {
             enter({ node }) {
                 if (node && node.source && !nodePath.isAbsolute(node.source.value) && node.source.value[0] === '.') {
-                    const defaultFileName = nodePath.parse(node.source.value).ext ? '' : 'index.jsx';
-                    const importPath = nodePath.resolve(currentFileDir, node.source.value);
-
-                    if (fs.existsSync(importPath)) {
-                        importDeclarationPaths.push(nodePath.resolve(importPath, defaultFileName));
-                    } else if (fs.existsSync(`${importPath}.jsx`)) {
-                        importDeclarationPaths.push(`${importPath}.jsx`);
-                    }
+                    processImports(node.source.value);
                 }
             },
         },
+    
+        CallExpression: {
+            enter({ node }) {
+                if (node && node.callee && types.isImport(node.callee)) {
+                    processImports(node.arguments[0].value);
+                }
+            }
+        }
     };
 };
