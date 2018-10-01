@@ -31,7 +31,13 @@ const extractStaticValueFromCode = (code, opts = {}, cb = noop) => {
         const traverser = getTraverser(cb, opts);
     
         traverse(ast, traverser);
-    } catch (ignore) {}
+    } catch (error) {
+        if (process.env.NODE_ENV === 'development') {
+            console.log(error);
+        } else {
+            throw error;
+        }
+    }
 };
 
 export const extractStaticValueFromFile = (file, opts = {}, cb = noop) => {
