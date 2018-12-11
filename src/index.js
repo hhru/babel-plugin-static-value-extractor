@@ -47,7 +47,7 @@ export const extractStaticValueFromFile = (file, opts = {}, cb = noop) => {
     }, cb);
 };
 
-const extractStaticValueImportedFilesFromFile = (file, opts = {}) => {
+export const extractStaticValueImportedFilesFromFile = (file, opts = {}) => {
     const cachedFiles = {};
     let staticPropsList = [];
 
