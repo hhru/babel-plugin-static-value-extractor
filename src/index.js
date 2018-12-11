@@ -47,7 +47,7 @@ export const extractStaticValueFromFile = (file, opts = {}, cb = noop) => {
     }, cb);
 };
 
-export const extractStaticValueImportedFilesFromFile = (file, opts = {}) => {
+export const extractStaticValueImportedFilesFromFile = (file, opts = {}, cb = noop) => {
     const cachedFiles = {};
     let staticPropsList = [];
 
@@ -68,8 +68,10 @@ export const extractStaticValueImportedFilesFromFile = (file, opts = {}) => {
     }
     
     _extractStaticValueImportedFilesFromFile(file, opts);
+    const values = [...new Set(staticPropsList)];
+    cb(values);
     
-    return [...new Set(staticPropsList)];
+    return values;
 };
 
 export default (globArr, opts = {}) => {
