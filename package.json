@@ -1,12 +1,16 @@
 {
   "name": "@hh.ru/babel-plugin-static-value-extractor",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "main": "lib/index.js",
   "devDependencies": {
     "babel-cli": "^6.26.0",
     "babel-preset-env": "^1.7.0",
     "babel-preset-stage-0": "^6.24.1",
+    "del": "^3.0.0",
     "mocha": "5.2.0"
+  },
+  "engines": {
+    "node": ">=10"
   },
   "repository": {
     "type": "git",
@@ -25,7 +29,6 @@
   ],
   "dependencies": {
     "babel-core": "^6.26.3",
-    "del": "^3.0.0",
     "glob-all": "^3.1.0"
   }
 }

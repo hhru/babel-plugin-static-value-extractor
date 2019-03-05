@@ -2,35 +2,43 @@ import fs from 'fs';
 import nodePath from 'path';
 import { types } from 'babel-core';
 
-const getConcatenatedStaticProps = (staticProps, nodeStaticProps) => (
+const JS_EXTENSIONS = ['', 'js', 'jsx'];
+
+const getConcatenatedStaticProps = (staticProps, nodeStaticProps) =>
     staticProps.concat(
         nodeStaticProps.reduce((arr, { value }) => {
             if (types.isStringLiteral(value)) {
-                arr.push(value.value)
+                arr.push(value.value);
             }
 
             return arr;
         }, [])
-    )
-);
+    );
+
+const isJsFile = (path) => JS_EXTENSIONS.includes(nodePath.parse(path).ext);
+
+const replacePath = (path, pathsToReplace = {}) =>
+    Object.keys(pathsToReplace)
+        .filter((checkPath) => path.startsWith(checkPath))
+        .reduce((result, checkPath) => nodePath.normalize(result.replace(checkPath, pathsToReplace[checkPath])), path);
 
 export default (cb, opts = {}) => {
     let staticProps = [];
     const currentFileDir = nodePath.parse(opts.filename).dir;
-    const { staticPropName } = opts;
+    const { staticPropName, pathsToReplace } = opts;
     const importDeclarationPaths = [];
-    
+
     const processImports = (filePath) => {
         const defaultFileName = nodePath.parse(filePath).ext ? '' : 'index.jsx';
         const importPath = nodePath.resolve(currentFileDir, filePath);
-    
+
         if (fs.existsSync(importPath)) {
             importDeclarationPaths.push(nodePath.resolve(importPath, defaultFileName));
         } else if (fs.existsSync(`${importPath}.jsx`)) {
             importDeclarationPaths.push(`${importPath}.jsx`);
         }
     };
-    
+
     return {
         Program: {
             exit() {
@@ -41,13 +49,14 @@ export default (cb, opts = {}) => {
         ClassProperty: {
             enter(path) {
                 const { node } = path;
-    
+
                 if (!node.static) {
                     return;
                 }
-                
+
                 if (
-                    types.isIdentifier(node.key) && node.key.name === staticPropName &&
+                    types.isIdentifier(node.key) &&
+                    node.key.name === staticPropName &&
                     types.isObjectExpression(node.value)
                 ) {
                     staticProps = getConcatenatedStaticProps(staticProps, node.value.properties);
@@ -63,21 +72,19 @@ export default (cb, opts = {}) => {
                             if (!types.isMemberExpression(node.left)) {
                                 return;
                             }
-                            
-                            const propIsMemberExpression = (
+
+                            const propIsMemberExpression =
                                 types.isMemberExpression(node.left.object) &&
                                 node.left.object.property.name === staticPropName &&
-                                types.isStringLiteral(node.right)
-                            );
-                            
-                            const propsIsObjectExpression = (
+                                types.isStringLiteral(node.right);
+
+                            const propsIsObjectExpression =
                                 types.isIdentifier(node.left.object) &&
                                 node.left.property.name === staticPropName &&
-                                types.isObjectExpression(node.right)
-                            );
-                            
+                                types.isObjectExpression(node.right);
+
                             if (propIsMemberExpression) {
-                                staticProps.push(node.right.value)
+                                staticProps.push(node.right.value);
                             } else if (propsIsObjectExpression) {
                                 staticProps = getConcatenatedStaticProps(staticProps, node.right.properties);
                             }
@@ -89,18 +96,18 @@ export default (cb, opts = {}) => {
 
         ImportDeclaration: {
             enter({ node }) {
-                if (node && node.source && !nodePath.isAbsolute(node.source.value) && node.source.value[0] === '.') {
-                    processImports(node.source.value);
+                if (node && node.source && isJsFile(node.source.value)) {
+                    processImports(replacePath(node.source.value, pathsToReplace));
                 }
             },
         },
-    
+
         CallExpression: {
             enter({ node }) {
                 if (node && node.callee && types.isImport(node.callee)) {
                     processImports(node.arguments[0].value);
                 }
-            }
-        }
+            },
+        },
     };
 };
