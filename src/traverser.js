@@ -34,8 +34,16 @@ export default (cb, opts = {}) => {
 
         if (fs.existsSync(importPath)) {
             importDeclarationPaths.push(nodePath.resolve(importPath, defaultFileName));
-        } else if (fs.existsSync(`${importPath}.jsx`)) {
+            return;
+        }
+
+        if (fs.existsSync(`${importPath}.jsx`)) {
             importDeclarationPaths.push(`${importPath}.jsx`);
+            return;
+        }
+
+        if (fs.existsSync(`${importPath}.js`)) {
+            importDeclarationPaths.push(`${importPath}.js`);
         }
     };
 

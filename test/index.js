@@ -17,21 +17,20 @@ describe('Extract static value from glob', () => {
 
             del.sync(path.join(fixtureDir, 'expected/*.js'));
 
-            extractStaticValueFromGlob([path.join(fixtureDir, '/Component/*.jsx')], {
-                staticPropName: 'customProps',
-                saveFilePath: path.join(fixtureDir, 'expected'),
-                pathsToReplace: { './before': './after' },
-                saveFileExt: 'js',
-                saveFileName: 'Component'
-            });
+            extractStaticValueFromGlob(
+                [path.join(fixtureDir, '/Component/*.jsx'), path.join(fixtureDir, '/Component/*.js')],
+                {
+                    staticPropName: 'customProps',
+                    saveFilePath: path.join(fixtureDir, 'expected'),
+                    pathsToReplace: { './before': './after' },
+                    saveFileExt: 'js',
+                    saveFileName: 'Component',
+                }
+            );
 
-            const expected = fs.readFileSync(
-                path.join(fixtureDir, 'expected/Component.js')
-            ).toString();
+            const expected = fs.readFileSync(path.join(fixtureDir, 'expected/Component.js')).toString();
 
-            const actual = fs.readFileSync(
-                path.join(fixtureDir, './actual.js')
-            ).toString();
+            const actual = fs.readFileSync(path.join(fixtureDir, './actual.js')).toString();
 
             assert.equal(trim(actual), trim(expected));
         });

@@ -1,7 +1,6 @@
-class after {
-    static customProps = {
-        bar: 'customProps-after',
-    };
-}
+const after = (val) => {val};
+after.customProps = {
+    bar: 'customProps-after',
+};
 
-export default after;
+export const After = after;
