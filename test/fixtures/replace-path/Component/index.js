@@ -1,4 +1,4 @@
-import after from './before';
+import { After } from './before';
 
 const component = () => {};
 
