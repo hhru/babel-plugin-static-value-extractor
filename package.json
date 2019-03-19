@@ -1,6 +1,6 @@
 {
   "name": "@hh.ru/babel-plugin-static-value-extractor",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "main": "lib/index.js",
   "devDependencies": {
     "babel-cli": "^6.26.0",
