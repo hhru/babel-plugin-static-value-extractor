@@ -41,34 +41,48 @@ const extractStaticValueFromCode = (code, opts = {}, cb = noop) => {
 };
 
 export const extractStaticValueFromFile = (file, opts = {}, cb = noop) => {
-    extractStaticValueFromCode(fs.readFileSync(file, ENCODING), {
+    extractStaticValueFromCode(fs.readFileSync(file), {
         ...opts,
         filename: file,
     }, cb);
 };
 
+let cachedFiles = {};
+
 export const extractStaticValueImportedFilesFromFile = (file, opts = {}, cb = noop) => {
-    const cachedFiles = {};
     let staticPropsList = [];
 
     function _extractStaticValueImportedFilesFromFile(file, opts) {
         let importsDeclarations = [];
-
+    
+        if (opts.include && !opts.include.find((includePath) => file.search(includePath) !== -1)) {
+            return;
+        }
+        
         extractStaticValueFromFile(file, opts, (_staticPropsList, _importsDeclarations) => {
             staticPropsList = staticPropsList.concat(_staticPropsList);
+            cachedFiles[file] = _staticPropsList;
             importsDeclarations = _importsDeclarations;
         });
 
         importsDeclarations.forEach((file) => {
             if (!cachedFiles[file]) {
                 _extractStaticValueImportedFilesFromFile(file, opts, staticPropsList);
-                cachedFiles[file] = true;
+            } else {
+                staticPropsList = staticPropsList.concat(cachedFiles[file]);
             }
         });
     }
-
-    _extractStaticValueImportedFilesFromFile(file, opts);
+    
+    if (cachedFiles[file]) {
+        staticPropsList = cachedFiles[file];
+    } else {
+        _extractStaticValueImportedFilesFromFile(file, opts);
+        cachedFiles[file] = staticPropsList;
+    }
+    
     const values = [...new Set(staticPropsList)];
+    
     cb(values);
 
     return values;
@@ -94,6 +108,8 @@ export default (globArr, opts = {}) => {
     }
 
     const content = opts.template ? opts.template(staticValues) : JSON.stringify(staticValues);
+
+    cachedFiles = {};
 
     if (content !== previousContent) {
         fs.mkdirSync(saveFilePath, {recursive: true});
