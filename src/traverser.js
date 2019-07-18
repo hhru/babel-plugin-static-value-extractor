@@ -1,6 +1,6 @@
 import fs from 'fs';
 import nodePath from 'path';
-import { types } from 'babel-core';
+import { types } from '@babel/core';
 
 const JS_EXTENSIONS = ['', 'js', 'jsx'];
 
