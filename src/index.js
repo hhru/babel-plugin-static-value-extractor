@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
-import * as babylon from 'babylon';
-import traverse from 'babel-traverse';
+import * as babylon from '@babel/parser';
+import traverse from '@babel/traverse';
 import glob from 'glob-all';
 
 import getTraverser from './traverser';
@@ -14,7 +14,7 @@ const BABEL_PARSING_OPTS = {
         'flow',
         'doExpressions',
         'objectRestSpread',
-        'decorators',
+        'decorators-legacy',
         'classProperties',
         'exportExtensions',
         'asyncGenerators',
