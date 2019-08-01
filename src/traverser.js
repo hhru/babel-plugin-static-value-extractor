@@ -4,11 +4,28 @@ import { types } from '@babel/core';
 
 const JS_EXTENSIONS = ['', 'js', 'jsx'];
 
-const getConcatenatedStaticProps = (staticProps, nodeStaticProps) =>
+const getFinalNodeValues = (node) => {
+    if (!types.isObjectExpression(node)) {
+        return [];
+    }
+    return node.properties.reduce((arr, {value}) => {
+        if (types.isObjectExpression(value)) {
+            arr.push(...getFinalNodeValues(value));
+        }
+        if (types.isStringLiteral(value)) {
+            arr.push(value.value);
+        }
+        return arr;
+    }, [])
+}
+
+const getConcatenatedStaticProps = (staticProps, nodeStaticProps, takeDeepStrings) =>
     staticProps.concat(
         nodeStaticProps.reduce((arr, { value }) => {
             if (types.isStringLiteral(value)) {
                 arr.push(value.value);
+            } else {
+                arr.push(...getFinalNodeValues(value));
             }
 
             return arr;
