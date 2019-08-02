@@ -4,16 +4,23 @@ import { types } from '@babel/core';
 
 const JS_EXTENSIONS = ['', 'js', 'jsx'];
 
-const getConcatenatedStaticProps = (staticProps, nodeStaticProps) =>
-    staticProps.concat(
-        nodeStaticProps.reduce((arr, { value }) => {
-            if (types.isStringLiteral(value)) {
-                arr.push(value.value);
-            }
+const getFinalNodeValues = (node) => {
+    if (!types.isObjectExpression(node)) {
+        return [];
+    }
+    return node.properties.reduce((arr, {value}) => {
+        if (types.isObjectExpression(value)) {
+            arr.push(...getFinalNodeValues(value));
+        }
+        if (types.isStringLiteral(value)) {
+            arr.push(value.value);
+        }
+        return arr;
+    }, [])
+}
 
-            return arr;
-        }, [])
-    );
+const getConcatenatedStaticProps = (staticProps, nodeStaticProps) =>
+    staticProps.concat(getFinalNodeValues(nodeStaticProps));
 
 const isJsFile = (path) => JS_EXTENSIONS.includes(nodePath.parse(path).ext);
 
@@ -67,7 +74,7 @@ export default (cb, opts = {}) => {
                     node.key.name === staticPropName &&
                     types.isObjectExpression(node.value)
                 ) {
-                    staticProps = getConcatenatedStaticProps(staticProps, node.value.properties);
+                    staticProps = getConcatenatedStaticProps(staticProps, node.value);
                 }
             },
         },
@@ -94,7 +101,7 @@ export default (cb, opts = {}) => {
                             if (propIsMemberExpression) {
                                 staticProps.push(node.right.value);
                             } else if (propsIsObjectExpression) {
-                                staticProps = getConcatenatedStaticProps(staticProps, node.right.properties);
+                                staticProps = getConcatenatedStaticProps(staticProps, node.right);
                             }
                         },
                     },
