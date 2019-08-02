@@ -19,18 +19,8 @@ const getFinalNodeValues = (node) => {
     }, [])
 }
 
-const getConcatenatedStaticProps = (staticProps, nodeStaticProps, takeDeepStrings) =>
-    staticProps.concat(
-        nodeStaticProps.reduce((arr, { value }) => {
-            if (types.isStringLiteral(value)) {
-                arr.push(value.value);
-            } else {
-                arr.push(...getFinalNodeValues(value));
-            }
-
-            return arr;
-        }, [])
-    );
+const getConcatenatedStaticProps = (staticProps, nodeStaticProps) =>
+    staticProps.concat(getFinalNodeValues(nodeStaticProps));
 
 const isJsFile = (path) => JS_EXTENSIONS.includes(nodePath.parse(path).ext);
 
@@ -84,7 +74,7 @@ export default (cb, opts = {}) => {
                     node.key.name === staticPropName &&
                     types.isObjectExpression(node.value)
                 ) {
-                    staticProps = getConcatenatedStaticProps(staticProps, node.value.properties);
+                    staticProps = getConcatenatedStaticProps(staticProps, node.value);
                 }
             },
         },
@@ -111,7 +101,7 @@ export default (cb, opts = {}) => {
                             if (propIsMemberExpression) {
                                 staticProps.push(node.right.value);
                             } else if (propsIsObjectExpression) {
-                                staticProps = getConcatenatedStaticProps(staticProps, node.right.properties);
+                                staticProps = getConcatenatedStaticProps(staticProps, node.right);
                             }
                         },
                     },
