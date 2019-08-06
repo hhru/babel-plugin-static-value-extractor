@@ -21,6 +21,7 @@ const BABEL_PARSING_OPTS = {
         'functionBind',
         'functionSent',
         'dynamicImport',
+        'optionalChaining',
     ],
 };
 const noop = () => {};
