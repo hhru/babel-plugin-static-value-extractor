@@ -1,6 +1,6 @@
 {
   "name": "@hh.ru/babel-plugin-static-value-extractor",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "main": "lib/index.js",
   "devDependencies": {
     "@babel/cli": "^7.5.0",
@@ -8,7 +8,7 @@
     "@babel/preset-env": "^7.5.4",
     "@babel/register": "^7.5.5",
     "del": "^3.0.0",
-    "mocha": "5.2.0"
+    "mocha": "^7.1.1"
   },
   "engines": {
     "node": ">=10"
@@ -21,7 +21,7 @@
   "scripts": {
     "clean": "rm -rf lib",
     "build": "babel src -d lib",
-    "test": "mocha --compilers js:@babel/register",
+    "test": "mocha --require @babel/register",
     "test:watch": "yarn run test -- --watch",
     "prepublish": "yarn clean && yarn build"
   },
@@ -30,6 +30,9 @@
   ],
   "dependencies": {
     "@babel/core": "^7.5.4",
-    "glob-all": "^3.1.0"
+    "glob-all": "^3.2.1"
+  },
+  "resolutions": {
+    "kind-of": "6.0.3"
   }
 }
