@@ -11,7 +11,7 @@ const BABEL_PARSING_OPTS = {
     sourceType: 'module',
     plugins: [
         'jsx',
-        'flow',
+        'typescript',
         'doExpressions',
         'objectRestSpread',
         'decorators-legacy',
@@ -24,7 +24,7 @@ const BABEL_PARSING_OPTS = {
         'optionalChaining',
     ],
 };
-const noop = () => {};
+const noop = () => { };
 
 const extractStaticValueFromCode = (code, opts = {}, cb = noop) => {
     try {
@@ -55,11 +55,11 @@ export const extractStaticValueImportedFilesFromFile = (file, opts = {}, cb = no
 
     function _extractStaticValueImportedFilesFromFile(file, opts) {
         let importsDeclarations = [];
-    
+
         if (opts.include && !opts.include.find((includePath) => file.search(includePath) !== -1)) {
             return;
         }
-    
+
         if (cachedFiles[file]) {
             staticPropsList = staticPropsList.concat(cachedFiles[file].propsList);
             importsDeclarations = cachedFiles[file].importsDeclarations;
@@ -75,16 +75,16 @@ export const extractStaticValueImportedFilesFromFile = (file, opts = {}, cb = no
             _extractStaticValueImportedFilesFromFile(file, opts, staticPropsList);
         });
     }
-    
+
     if (cachedFiles[file]) {
         staticPropsList = cachedFiles[file].propsList;
     } else {
         _extractStaticValueImportedFilesFromFile(file, opts);
-        cachedFiles[file] = { propsList: staticPropsList, importsDeclarations: []};
+        cachedFiles[file] = { propsList: staticPropsList, importsDeclarations: [] };
     }
-    
+
     const values = [...new Set(cachedFiles[file].propsList)];
-    
+
     cb(values);
 
     return values;
@@ -114,7 +114,7 @@ export default (globArr, opts = {}) => {
     cachedFiles = {};
 
     if (content !== previousContent) {
-        fs.mkdirSync(saveFilePath, {recursive: true});
+        fs.mkdirSync(saveFilePath, { recursive: true });
         fs.writeFileSync(`${saveFilePath}/${opts.saveFileName}.${opts.saveFileExt}`, content);
     }
 };
