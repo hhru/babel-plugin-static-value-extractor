@@ -2,7 +2,7 @@ import fs from 'fs';
 import nodePath from 'path';
 import { types } from '@babel/core';
 
-const JS_EXTENSIONS = ['', 'js', 'jsx'];
+const JS_EXTENSIONS = ['', 'js', 'jsx', 'ts', 'tsx'];
 
 const getFinalNodeValues = (node) => {
     if (!types.isObjectExpression(node)) {
@@ -36,22 +36,25 @@ export default (cb, opts = {}) => {
     const importDeclarationPaths = [];
 
     const processImports = (filePath) => {
-        const defaultFileName = nodePath.parse(filePath).ext ? '' : 'index.jsx';
+        const hasExt = nodePath.parse(filePath).ext;
+        const defaultFileNameTs = hasExt ? "" : "index.tsx";
+        const defaultFileNameJs = hasExt ? "" : "index.jsx";
         const importPath = nodePath.resolve(currentFileDir, filePath);
 
-        if (fs.existsSync(importPath)) {
-            importDeclarationPaths.push(nodePath.resolve(importPath, defaultFileName));
-            return;
-        }
+        const paths = [
+            nodePath.resolve(importPath, defaultFileNameTs),
+            nodePath.resolve(importPath, defaultFileNameJs),
+            `${importPath}.tsx`,
+            `${importPath}.jsx`,
+            `${importPath}.ts`,
+            `${importPath}.js`,
+        ];
 
-        if (fs.existsSync(`${importPath}.jsx`)) {
-            importDeclarationPaths.push(`${importPath}.jsx`);
-            return;
-        }
-
-        if (fs.existsSync(`${importPath}.js`)) {
-            importDeclarationPaths.push(`${importPath}.js`);
-        }
+        paths.some((path) => {
+            if (fs.existsSync(path)) {
+                importDeclarationPaths.push(path);
+            }
+        });
     };
 
     return {
