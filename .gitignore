@@ -1,7 +1,7 @@
-.vscode
-.idea
-
 node_modules
 *.log
-lib
-test/fixtures/**/expected/*
+src
+test
+README.md
+yarn.lock
+.travis.yml
