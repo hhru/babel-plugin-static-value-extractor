@@ -18,7 +18,7 @@ describe('Extract static value from glob', () => {
             del.sync(path.join(fixtureDir, 'expected/*.js'));
 
             extractStaticValueFromGlob(
-                [path.join(fixtureDir, '/Component/*.jsx'), path.join(fixtureDir, '/Component/*.js')],
+                [path.join(fixtureDir, '/Component/*.?sx'), path.join(fixtureDir, '/Component/*.?s')],
                 {
                     staticPropName: 'customProps',
                     saveFilePath: path.join(fixtureDir, 'expected'),

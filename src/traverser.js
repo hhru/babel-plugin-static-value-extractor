@@ -8,7 +8,7 @@ const getFinalNodeValues = (node) => {
     if (!types.isObjectExpression(node)) {
         return [];
     }
-    return node.properties.reduce((arr, {value}) => {
+    return node.properties.reduce((arr, { value }) => {
         if (types.isObjectExpression(value)) {
             arr.push(...getFinalNodeValues(value));
         }
@@ -16,8 +16,8 @@ const getFinalNodeValues = (node) => {
             arr.push(value.value);
         }
         return arr;
-    }, [])
-}
+    }, []);
+};
 
 const getConcatenatedStaticProps = (staticProps, nodeStaticProps) =>
     staticProps.concat(getFinalNodeValues(nodeStaticProps));
@@ -37,8 +37,8 @@ export default (cb, opts = {}) => {
 
     const processImports = (filePath) => {
         const hasExt = nodePath.parse(filePath).ext;
-        const defaultFileNameTs = hasExt ? "" : "index.tsx";
-        const defaultFileNameJs = hasExt ? "" : "index.jsx";
+        const defaultFileNameTs = hasExt ? '' : 'index.tsx';
+        const defaultFileNameJs = hasExt ? '' : 'index.jsx';
         const importPath = nodePath.resolve(currentFileDir, filePath);
 
         const paths = [
@@ -53,6 +53,7 @@ export default (cb, opts = {}) => {
         paths.some((path) => {
             if (fs.existsSync(path)) {
                 importDeclarationPaths.push(path);
+                return true;
             }
         });
     };
