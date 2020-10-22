@@ -11,7 +11,7 @@ const BABEL_PARSING_OPTS = {
     sourceType: 'module',
     plugins: [
         'jsx',
-        'flow',
+        'typescript',
         'doExpressions',
         'objectRestSpread',
         'decorators-legacy',
