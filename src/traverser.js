@@ -50,12 +50,10 @@ export default (cb, opts = {}) => {
             `${importPath}.js`,
         ];
 
-        paths.some((path) => {
-            if (fs.existsSync(path)) {
-                importDeclarationPaths.push(path);
-                return true;
-            }
-        });
+        const declarationPath = paths.find((path) => fs.existsSync(path));
+        if (declarationPath) {
+            importDeclarationPaths.push(declarationPath);
+        }
     };
 
     return {
