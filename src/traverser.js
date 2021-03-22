@@ -65,7 +65,7 @@ export default (cb, opts = {}) => {
 
         VariableDeclarator: {
             enter(path) {
-                if (constantName && path.node.id.name === constantName) {
+                if (constantName && path.node.id.name === constantName && types.isProgram(path.parentPath.parent)) {
                     staticProps = getConcatenatedStaticProps(staticProps, path.node.init);
                 }
             },
