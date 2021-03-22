@@ -21,7 +21,16 @@ interface StaticProps {
     };
 }
 
-const Component: FC<MyCompProps> & StaticProps = ({ text }) => text;
+const Component: FC<MyCompProps> & StaticProps = ({ text }) => {
+    const CustomProps = {
+        bar: 'const-wrong-1',
+        foo: 'const-wrong-2',
+        nested: {
+            bar: 'const-wrong-3',
+            foo: 'const-wrong-4',
+        },
+    };
+};
 
 Component.customProps = {
     bar: 'customProps-1',
