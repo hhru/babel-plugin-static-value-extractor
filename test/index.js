@@ -20,6 +20,7 @@ describe('Extract static value from glob', () => {
             extractStaticValueFromGlob(
                 [path.join(fixtureDir, '/Component/*.?sx'), path.join(fixtureDir, '/Component/*.?s')],
                 {
+                    constantName: 'CustomProps',
                     staticPropName: 'customProps',
                     saveFilePath: path.join(fixtureDir, 'expected'),
                     pathsToReplace: { './before': './after' },
