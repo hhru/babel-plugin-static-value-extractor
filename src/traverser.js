@@ -32,7 +32,7 @@ const replacePath = (path, pathsToReplace = {}) =>
 export default (cb, opts = {}) => {
     let staticProps = [];
     const currentFileDir = nodePath.parse(opts.filename).dir;
-    const { staticPropName, pathsToReplace } = opts;
+    const { staticPropName, pathsToReplace, constantName } = opts;
     const importDeclarationPaths = [];
 
     const processImports = (filePath) => {
@@ -60,6 +60,14 @@ export default (cb, opts = {}) => {
         Program: {
             exit() {
                 cb(staticProps, importDeclarationPaths);
+            },
+        },
+
+        VariableDeclarator: {
+            enter(path) {
+                if (constantName && path.node.id.name === constantName) {
+                    staticProps = getConcatenatedStaticProps(staticProps, path.node.init);
+                }
             },
         },
 
