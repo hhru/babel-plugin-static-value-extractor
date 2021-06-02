@@ -55,13 +55,13 @@ export const extractStaticValueImportedFilesFromFile = (file, opts = {}, cb = no
 
     function _extractStaticValueImportedFilesFromFile(file, opts) {
         let importsDeclarations = [];
-    
+
         if (opts.include && !opts.include.find((includePath) => file.search(includePath) !== -1)) {
             return;
         }
-    
+
         if (cachedFiles[file]) {
-            staticPropsList = staticPropsList.concat(cachedFiles[file].propsList);
+            staticPropsList.push(...cachedFiles[file].propsList);
             importsDeclarations = cachedFiles[file].importsDeclarations;
         } else {
             extractStaticValueFromFile(file, opts, (_staticPropsList, _importsDeclarations) => {
@@ -75,16 +75,16 @@ export const extractStaticValueImportedFilesFromFile = (file, opts = {}, cb = no
             _extractStaticValueImportedFilesFromFile(file, opts, staticPropsList);
         });
     }
-    
+
     if (cachedFiles[file]) {
         staticPropsList = cachedFiles[file].propsList;
     } else {
         _extractStaticValueImportedFilesFromFile(file, opts);
         cachedFiles[file] = { propsList: staticPropsList, importsDeclarations: []};
     }
-    
+
     const values = [...new Set(cachedFiles[file].propsList)];
-    
+
     cb(values);
 
     return values;
