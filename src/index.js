@@ -5,6 +5,7 @@ import traverse from '@babel/traverse';
 import glob from 'glob-all';
 
 import getTraverser from './traverser';
+import { getPersistentCache, savePersistentCache } from './persistentCache';
 
 const ENCODING = 'utf8';
 const BABEL_PARSING_OPTS = {
@@ -41,6 +42,31 @@ const extractStaticValueFromCode = (code, opts = {}, cb = noop) => {
     }
 };
 
+export const prepareCache = (opts) => {
+    const { basePath } = opts;
+    const cache = getPersistentCache(opts);
+
+    const invalidFiles = [];
+    Object.keys(cache).forEach((filePath) => {
+        const { cachedMtime } = cache[filePath];
+        const { mtimeMs } = fs.statSync(path.join(basePath, filePath));
+
+        if (cachedMtime !== mtimeMs) {
+            invalidFiles.push(filePath, ...cache[filePath].reverseImports);
+        }
+    });
+
+    const uniqueFiles = new Set(invalidFiles);
+    uniqueFiles.forEach((filePath) => {
+        delete cache[filePath];
+    });
+
+    savePersistentCache(cache, opts);
+}
+
+let cachedFiles = {};
+let cacheLoaded = false;
+
 export const extractStaticValueFromFile = (file, opts = {}, cb = noop) => {
     extractStaticValueFromCode(fs.readFileSync(file), {
         ...opts,
@@ -48,49 +74,86 @@ export const extractStaticValueFromFile = (file, opts = {}, cb = noop) => {
     }, cb);
 };
 
-let cachedFiles = {};
+const mergeProps = (propNames, currentList, added) => {
+    propNames.forEach((name) => {
+        if (added[name]) {
+            currentList[name].push(...added[name]);
+        }
+    })
+};
 
-export const extractStaticValueImportedFilesFromFile = (file, opts = {}, cb = noop) => {
-    let staticPropsList = [];
+export const extractStaticValueImportedFilesFromFile = (file, opts = {}, cb = noop, importPaths = []) => {
+    if (!cacheLoaded) {
+        cachedFiles = getPersistentCache(opts);
+        cacheLoaded = true;
+    }
 
-    function _extractStaticValueImportedFilesFromFile(file, opts) {
+    const propNames = Object.keys(opts.propsToExtract);
+    const relativePath = path.relative(opts.basePath, file);
+
+    let staticPropsList = propNames.reduce((agg, name) => ({ ...agg, [name]: [] }), {});
+    const { mtimeMs } = fs.statSync(file);
+
+    function _extractStaticValueImportedFilesFromFile(file, opts, importPaths) {
+        const { mtimeMs } = fs.statSync(file);
+        const relativePath = path.relative(opts.basePath, file);
+
         let importsDeclarations = [];
 
         if (opts.include && !opts.include.find((includePath) => file.search(includePath) !== -1)) {
             return;
         }
 
-        if (cachedFiles[file]) {
-            staticPropsList.push(...cachedFiles[file].propsList);
-            importsDeclarations = cachedFiles[file].importsDeclarations;
+        if (cachedFiles[relativePath]) {
+            mergeProps(propNames, staticPropsList, cachedFiles[relativePath].propsList)
+            importsDeclarations = cachedFiles[relativePath].importsDeclarations;
+            cachedFiles[relativePath].reverseImports = [
+                ...new Set([...cachedFiles[relativePath].reverseImports, ...importPaths])
+            ]
         } else {
             extractStaticValueFromFile(file, opts, (_staticPropsList, _importsDeclarations) => {
-                staticPropsList = staticPropsList.concat(_staticPropsList);
+                mergeProps(propNames, staticPropsList, _staticPropsList);
                 importsDeclarations = _importsDeclarations;
-                cachedFiles[file] = { propsList: _staticPropsList, importsDeclarations, };
+                cachedFiles[relativePath] = {
+                    cachedMtime: mtimeMs,
+                    propsList: _staticPropsList,
+                    importsDeclarations,
+                    reverseImports: importPaths,
+                };
             });
         }
 
         importsDeclarations.forEach((file) => {
-            _extractStaticValueImportedFilesFromFile(file, opts, staticPropsList);
+            _extractStaticValueImportedFilesFromFile(file, opts, [...importPaths, relativePath]);
         });
     }
 
-    if (cachedFiles[file]) {
-        staticPropsList = cachedFiles[file].propsList;
+    if (cachedFiles[relativePath]) {
+        staticPropsList = cachedFiles[relativePath].propsList;
+        cachedFiles[relativePath].reverseImports = [
+            ...new Set([...cachedFiles[relativePath].reverseImports, ...importPaths])
+        ]
     } else {
-        _extractStaticValueImportedFilesFromFile(file, opts);
-        cachedFiles[file] = { propsList: staticPropsList, importsDeclarations: []};
+        _extractStaticValueImportedFilesFromFile(file, opts, [...importPaths, relativePath]);
+        cachedFiles[relativePath] = {
+            cachedMtime: mtimeMs,
+            propsList: staticPropsList,
+            importsDeclarations: [],
+            reverseImports: importPaths,
+        };
     }
 
-    const values = [...new Set(cachedFiles[file].propsList)];
+    propNames.forEach((name) => {
+        cachedFiles[relativePath].propsList[name] = [...new Set(cachedFiles[relativePath].propsList[name])];
+    })
 
-    cb(values);
+    cb(cachedFiles[relativePath].propsList);
 
-    return values;
+    return cachedFiles[relativePath].propsList;
 };
 
 export default (globArr, opts = {}) => {
+    const propNames = Object.keys(opts.propsToExtract)
     const saveFilePath = path.resolve(opts.saveFilePath);
     const PATH_DELIMITER_LENGTH = 1;
     let previousContent;
@@ -98,23 +161,33 @@ export default (globArr, opts = {}) => {
     const staticValues = glob.sync(globArr).reduce((globObject, file) => {
         const staticValues = extractStaticValueImportedFilesFromFile(file, opts);
         const dir = path.parse(file).dir;
+        const relativePath = path.relative(opts.basePath, dir);
 
-        globObject[dir.slice(dir.lastIndexOf('/') + PATH_DELIMITER_LENGTH)] = staticValues;
+        propNames.forEach((name) => {
+            if (!globObject[name]) {
+                globObject[name] = {};
+            }
+
+            globObject[name][relativePath.slice(dir.lastIndexOf('/') + PATH_DELIMITER_LENGTH)] = staticValues[name];
+        })
 
         return globObject;
     }, {});
 
-    if (fs.existsSync(`${saveFilePath}/${opts.saveFileName}.${opts.saveFileExt}`)) {
-        previousContent = fs.readFileSync(`${saveFilePath}/${opts.saveFileName}.${opts.saveFileExt}`, ENCODING)
-            .toString();
-    }
+    propNames.forEach((name) => {
+        if (fs.existsSync(`${saveFilePath}/${name}.${opts.saveFileExt}`)) {
+            previousContent = fs.readFileSync(`${saveFilePath}/${name}.${opts.saveFileExt}`, ENCODING)
+                .toString();
+        }
 
-    const content = opts.template ? opts.template(staticValues) : JSON.stringify(staticValues);
+        const content = opts.template ? opts.template(name, staticValues[name]) : JSON.stringify(staticValues[name]);
 
-    cachedFiles = {};
+        if (content !== previousContent) {
+            fs.mkdirSync(saveFilePath, {recursive: true});
+            fs.writeFileSync(`${saveFilePath}/${name}.${opts.saveFileExt}`, content);
+        }
+    });
 
-    if (content !== previousContent) {
-        fs.mkdirSync(saveFilePath, {recursive: true});
-        fs.writeFileSync(`${saveFilePath}/${opts.saveFileName}.${opts.saveFileExt}`, content);
-    }
+    savePersistentCache(cachedFiles, opts);
+    cacheLoaded = false;
 };
