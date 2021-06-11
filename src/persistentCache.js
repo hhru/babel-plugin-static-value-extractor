@@ -2,7 +2,6 @@ import fs from 'fs';
 
 export const getPersistentCache = ({ cacheFile }) => {
     if (!fs.existsSync(cacheFile)) {
-        console.log('somehow missed file ', cacheFile);
         return {}
     }
 
