@@ -1,14 +1,50 @@
 import fs from 'fs';
+import os from 'os';
+import path from 'path';
 
-export const getPersistentCache = ({ cacheFile }) => {
+import findCacheDir from 'find-cache-dir';
+
+const CACHE_SAVE_DELAY_MS = 300;
+let cacheSaveTimeout;
+
+const getCacheFilePath = () => {
+    const cacheDir = findCacheDir({ name: 'babel-plugin-static-value-extractor' }) || os.tmpdir();
+    return path.join(cacheDir, 'files.json');
+}
+
+export const getPersistentCache = () => {
+    const cacheFile = getCacheFilePath();
     if (!fs.existsSync(cacheFile)) {
         return {}
     }
 
-    const cache = fs.readFileSync(cacheFile).toString();
-    return JSON.parse(cache);
+    let cacheObject = {};
+
+    try {
+        const cache = fs.readFileSync(cacheFile).toString();
+        cacheObject = JSON.parse(cache);
+    } catch (e) {
+        try {
+            fs.unlinkSync(cacheFile);
+        } catch (e) {
+            console.log(e);
+        }
+    }
+
+    return cacheObject;
 }
 
-export const savePersistentCache = (cache, { cacheFile }) => {
+const actualCacheSave = (cache) => {
+    const cacheFile = getCacheFilePath();
+    fs.mkdirSync(path.dirname(cacheFile), { recursive: true });
     fs.writeFileSync(cacheFile, JSON.stringify(cache));
+}
+
+export const savePersistentCache = (cache) => {
+    clearTimeout(cacheSaveTimeout);
+
+    setTimeout(
+        () => actualCacheSave(cache),
+        CACHE_SAVE_DELAY_MS
+    )
 }

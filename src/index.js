@@ -42,30 +42,28 @@ const extractStaticValueFromCode = (code, opts = {}, cb = noop) => {
     }
 };
 
+let cachedFiles = getPersistentCache();
+
 export const prepareCache = (opts) => {
     const { basePath } = opts;
-    const cache = getPersistentCache(opts);
 
     const invalidFiles = [];
-    Object.keys(cache).forEach((filePath) => {
-        const { cachedMtime } = cache[filePath];
+    Object.keys(cachedFiles).forEach((filePath) => {
+        const { cachedMtime } = cachedFiles[filePath];
         const { mtimeMs } = fs.statSync(path.join(basePath, filePath));
 
         if (cachedMtime !== mtimeMs) {
-            invalidFiles.push(filePath, ...cache[filePath].reverseImports);
+            invalidFiles.push(filePath, ...cachedFiles[filePath].reverseImports);
         }
     });
 
     const uniqueFiles = new Set(invalidFiles);
     uniqueFiles.forEach((filePath) => {
-        delete cache[filePath];
+        delete cachedFiles[filePath];
     });
 
-    savePersistentCache(cache, opts);
+    savePersistentCache(cachedFiles);
 }
-
-let cachedFiles = {};
-let cacheLoaded = false;
 
 export const extractStaticValueFromFile = (file, opts = {}, cb = noop) => {
     extractStaticValueFromCode(fs.readFileSync(file), {
@@ -83,11 +81,6 @@ const mergeProps = (propNames, currentList, added) => {
 };
 
 export const extractStaticValueImportedFilesFromFile = (file, opts = {}, cb = noop, importPaths = []) => {
-    if (!cacheLoaded) {
-        cachedFiles = getPersistentCache(opts);
-        cacheLoaded = true;
-    }
-
     const propNames = Object.keys(opts.propsToExtract);
     const relativePath = path.relative(opts.basePath, file);
 
@@ -188,6 +181,5 @@ export default (globArr, opts = {}) => {
         }
     });
 
-    savePersistentCache(cachedFiles, opts);
-    cacheLoaded = false;
+    savePersistentCache(cachedFiles);
 };
