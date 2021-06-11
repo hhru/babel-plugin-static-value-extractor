@@ -154,14 +154,14 @@ export default (globArr, opts = {}) => {
     const staticValues = glob.sync(globArr).reduce((globObject, file) => {
         const staticValues = extractStaticValueImportedFilesFromFile(file, opts);
         const dir = path.parse(file).dir;
-        const relativePath = path.relative(opts.basePath, dir);
+        const componentName = dir.slice(dir.lastIndexOf('/') + PATH_DELIMITER_LENGTH)
 
         propNames.forEach((name) => {
             if (!globObject[name]) {
                 globObject[name] = {};
             }
 
-            globObject[name][relativePath.slice(dir.lastIndexOf('/') + PATH_DELIMITER_LENGTH)] = staticValues[name];
+            globObject[name][componentName] = staticValues[name];
         })
 
         return globObject;
