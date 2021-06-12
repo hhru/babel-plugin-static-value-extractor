@@ -65,6 +65,12 @@ export const prepareCache = (opts) => {
     savePersistentCache(cachedFiles);
 }
 
+const removeDuplicates = (key) => {
+    Object.keys(cachedFiles).forEach((file) => {
+        cachedFiles[file][key] = [...new Set(cachedFiles[file][key])]
+    })
+}
+
 export const extractStaticValueFromFile = (file, opts = {}, cb = noop) => {
     extractStaticValueFromCode(fs.readFileSync(file), {
         ...opts,
@@ -100,9 +106,7 @@ export const extractStaticValueImportedFilesFromFile = (file, opts = {}, cb = no
         if (cachedFiles[relativePath]) {
             mergeProps(propNames, staticPropsList, cachedFiles[relativePath].propsList)
             importsDeclarations = cachedFiles[relativePath].importsDeclarations;
-            cachedFiles[relativePath].reverseImports = [
-                ...new Set([...cachedFiles[relativePath].reverseImports, ...importPaths])
-            ]
+            cachedFiles[relativePath].reverseImports.push(...importPaths);
         } else {
             extractStaticValueFromFile(file, opts, (_staticPropsList, _importsDeclarations) => {
                 mergeProps(propNames, staticPropsList, _staticPropsList);
@@ -123,9 +127,7 @@ export const extractStaticValueImportedFilesFromFile = (file, opts = {}, cb = no
 
     if (cachedFiles[relativePath]) {
         staticPropsList = cachedFiles[relativePath].propsList;
-        cachedFiles[relativePath].reverseImports = [
-            ...new Set([...cachedFiles[relativePath].reverseImports, ...importPaths])
-        ]
+        cachedFiles[relativePath].reverseImports.push(...importPaths);
     } else {
         _extractStaticValueImportedFilesFromFile(file, opts, [...importPaths, relativePath]);
         cachedFiles[relativePath] = {
@@ -181,5 +183,6 @@ export default (globArr, opts = {}) => {
         }
     });
 
+    removeDuplicates('reverseImports');
     savePersistentCache(cachedFiles);
 };
