@@ -19,9 +19,6 @@ const getFinalNodeValues = (node) => {
     }, []);
 };
 
-const getConcatenatedStaticProps = (staticProps, nodeStaticProps) =>
-    staticProps.concat(getFinalNodeValues(nodeStaticProps));
-
 const isJsFile = (path) => JS_EXTENSIONS.includes(nodePath.parse(path).ext);
 
 const replacePath = (path, pathsToReplace = {}) =>
@@ -30,9 +27,24 @@ const replacePath = (path, pathsToReplace = {}) =>
         .reduce((result, checkPath) => nodePath.normalize(result.replace(checkPath, pathsToReplace[checkPath])), path);
 
 export default (cb, opts = {}) => {
-    let staticProps = [];
     const currentFileDir = nodePath.parse(opts.filename).dir;
-    const { staticPropName, pathsToReplace, constantName } = opts;
+    const { propsToExtract, pathsToReplace, basePath } = opts;
+    const propNames = Object.keys(propsToExtract);
+    const staticProps = propNames.reduce((agg, name) => ({ ...agg, [name]: [] }), {});
+    const constants = propNames.reduce(
+        (agg, name) => {
+            if (propsToExtract[name].constantName) {
+                return {
+                    ...agg,
+                    [propsToExtract[name].constantName]: name
+                }
+            }
+
+            return agg;
+        },
+        {}
+    );
+    const constantNames = Object.keys(constants);
     const importDeclarationPaths = [];
 
     const processImports = (filePath) => {
@@ -52,7 +64,7 @@ export default (cb, opts = {}) => {
 
         const declarationPath = paths.find((path) => fs.existsSync(path));
         if (declarationPath) {
-            importDeclarationPaths.push(declarationPath);
+            importDeclarationPaths.push(nodePath.relative(basePath, declarationPath));
         }
     };
 
@@ -65,8 +77,8 @@ export default (cb, opts = {}) => {
 
         VariableDeclarator: {
             enter(path) {
-                if (constantName && path.node.id.name === constantName && types.isProgram(path.parentPath.parent)) {
-                    staticProps = getConcatenatedStaticProps(staticProps, path.node.init);
+                if (constantNames.includes(path.node.id.name) && types.isProgram(path.parentPath.parent)) {
+                    staticProps[constants[path.node.id.name]].push(...getFinalNodeValues(path.node.init))
                 }
             },
         },
@@ -81,10 +93,10 @@ export default (cb, opts = {}) => {
 
                 if (
                     types.isIdentifier(node.key) &&
-                    node.key.name === staticPropName &&
+                    propNames.includes(node.key.name) &&
                     types.isObjectExpression(node.value)
                 ) {
-                    staticProps = getConcatenatedStaticProps(staticProps, node.value);
+                    staticProps[node.key.name].push(...getFinalNodeValues(node.value))
                 }
             },
         },
@@ -100,18 +112,18 @@ export default (cb, opts = {}) => {
 
                             const propIsMemberExpression =
                                 types.isMemberExpression(node.left.object) &&
-                                node.left.object.property.name === staticPropName &&
+                                propNames.includes(node.left.object.property.name) &&
                                 types.isStringLiteral(node.right);
 
                             const propsIsObjectExpression =
                                 types.isIdentifier(node.left.object) &&
-                                node.left.property.name === staticPropName &&
+                                propNames.includes(node.left.property.name) &&
                                 types.isObjectExpression(node.right);
 
                             if (propIsMemberExpression) {
-                                staticProps.push(node.right.value);
+                                staticProps[node.left.object.property.name].push(node.right.value);
                             } else if (propsIsObjectExpression) {
-                                staticProps = getConcatenatedStaticProps(staticProps, node.right);
+                                staticProps[node.left.property.name].push(...getFinalNodeValues(node.right))
                             }
                         },
                     },
