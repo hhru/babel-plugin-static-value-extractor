@@ -50,9 +50,9 @@ export const prepareCache = (opts) => {
     const invalidFiles = [];
     Object.keys(cachedFiles).forEach((filePath) => {
         const { cachedMtime } = cachedFiles[filePath];
-        const { mtimeMs } = fs.statSync(path.join(basePath, filePath));
+        const fullPath = path.join(basePath, filePath);
 
-        if (cachedMtime !== mtimeMs) {
+        if (!fs.existsSync(fullPath) || cachedMtime !== fs.statSync(fullPath).mtimeMs) {
             invalidFiles.push(filePath, ...cachedFiles[filePath].reverseImports);
         }
     });
