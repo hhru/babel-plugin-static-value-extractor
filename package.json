@@ -1,6 +1,6 @@
 {
   "name": "@hh.ru/babel-plugin-static-value-extractor",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "lib/index.js",
   "devDependencies": {
     "@babel/cli": "^7.5.0",
@@ -31,8 +31,8 @@
   ],
   "dependencies": {
     "@babel/core": "^7.5.4",
-    "glob-all": "^3.2.1",
-    "find-cache-dir": "^3.3.1"
+    "find-cache-dir": "^3.3.1",
+    "glob-all": "^3.2.1"
   },
   "resolutions": {
     "kind-of": "6.0.3"
