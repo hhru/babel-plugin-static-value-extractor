@@ -63,19 +63,23 @@ export const prepareCache = (opts) => {
     });
 
     savePersistentCache(cachedFiles);
-}
+};
 
 const removeDuplicates = (key) => {
     Object.keys(cachedFiles).forEach((file) => {
-        cachedFiles[file][key] = [...new Set(cachedFiles[file][key])]
-    })
-}
+        cachedFiles[file][key] = [...new Set(cachedFiles[file][key])];
+    });
+};
 
 export const extractStaticValueFromFile = (file, opts = {}, cb = noop) => {
-    extractStaticValueFromCode(fs.readFileSync(file), {
-        ...opts,
-        filename: file,
-    }, cb);
+    extractStaticValueFromCode(
+        fs.readFileSync(file),
+        {
+            ...opts,
+            filename: file,
+        },
+        cb
+    );
 };
 
 const mergeProps = (propNames, currentList, added) => {
@@ -83,7 +87,7 @@ const mergeProps = (propNames, currentList, added) => {
         if (added[name]) {
             currentList[name].push(...added[name]);
         }
-    })
+    });
 };
 
 export const extractStaticValueImportedFilesFromFile = (file, opts = {}, cb = noop, importPaths = []) => {
@@ -94,17 +98,17 @@ export const extractStaticValueImportedFilesFromFile = (file, opts = {}, cb = no
     const { mtimeMs } = fs.statSync(file);
 
     function _extractStaticValueImportedFilesFromFile(file, opts, importPaths) {
+        if (opts.include && !opts.include.find((includePath) => file.search(includePath) !== -1)) {
+            return;
+        }
+
         const { mtimeMs } = fs.statSync(file);
         const relativePath = path.relative(opts.basePath, file);
 
         let importsDeclarations = [];
 
-        if (opts.include && !opts.include.find((includePath) => file.search(includePath) !== -1)) {
-            return;
-        }
-
         if (cachedFiles[relativePath]) {
-            mergeProps(propNames, staticPropsList, cachedFiles[relativePath].propsList)
+            mergeProps(propNames, staticPropsList, cachedFiles[relativePath].propsList);
             importsDeclarations = cachedFiles[relativePath].importsDeclarations;
             cachedFiles[relativePath].reverseImports.push(...importPaths);
         } else {
@@ -140,7 +144,7 @@ export const extractStaticValueImportedFilesFromFile = (file, opts = {}, cb = no
 
     propNames.forEach((name) => {
         cachedFiles[relativePath].propsList[name] = [...new Set(cachedFiles[relativePath].propsList[name])];
-    })
+    });
 
     cb(cachedFiles[relativePath].propsList);
 
@@ -148,7 +152,7 @@ export const extractStaticValueImportedFilesFromFile = (file, opts = {}, cb = no
 };
 
 export default (globArr, opts = {}) => {
-    const propNames = Object.keys(opts.propsToExtract)
+    const propNames = Object.keys(opts.propsToExtract);
     const saveFilePath = path.resolve(opts.saveFilePath);
     const PATH_DELIMITER_LENGTH = 1;
     let previousContent;
@@ -156,7 +160,7 @@ export default (globArr, opts = {}) => {
     const staticValues = glob.sync(globArr).reduce((globObject, file) => {
         const staticValues = extractStaticValueImportedFilesFromFile(file, opts);
         const dir = path.parse(file).dir;
-        const componentName = dir.slice(dir.lastIndexOf('/') + PATH_DELIMITER_LENGTH)
+        const componentName = dir.slice(dir.lastIndexOf('/') + PATH_DELIMITER_LENGTH);
 
         propNames.forEach((name) => {
             if (!globObject[name]) {
@@ -164,21 +168,20 @@ export default (globArr, opts = {}) => {
             }
 
             globObject[name][componentName] = staticValues[name];
-        })
+        });
 
         return globObject;
     }, {});
 
     propNames.forEach((name) => {
         if (fs.existsSync(`${saveFilePath}/${name}.${opts.saveFileExt}`)) {
-            previousContent = fs.readFileSync(`${saveFilePath}/${name}.${opts.saveFileExt}`, ENCODING)
-                .toString();
+            previousContent = fs.readFileSync(`${saveFilePath}/${name}.${opts.saveFileExt}`, ENCODING).toString();
         }
 
         const content = opts.template ? opts.template(name, staticValues[name]) : JSON.stringify(staticValues[name]);
 
         if (content !== previousContent) {
-            fs.mkdirSync(saveFilePath, {recursive: true});
+            fs.mkdirSync(saveFilePath, { recursive: true });
             fs.writeFileSync(`${saveFilePath}/${name}.${opts.saveFileExt}`, content);
         }
     });
