@@ -1,0 +1,70 @@
+const path = require('path');
+const extractStaticValueFromGlob = require('./index').default;
+const { extractStaticValueImportedFilesFromFile, prepareCache } = require('./index');
+
+const extractStaticValues = ({ saveFilePath, filesArr, appContainerPath, basePath, ...otherSettings }) => {
+    const settings = { basePath, ...otherSettings };
+    prepareCache(settings);
+
+    extractStaticValueImportedFilesFromFile(appContainerPath, settings, (appContainerData) => {
+        extractStaticValueFromGlob(filesArr, {
+            ...settings,
+            saveFilePath,
+            saveFileExt: 'py',
+            template: (propName, propData) => {
+                Object.keys(propData).forEach((container) => {
+                    propData[container] = propData[container].concat(appContainerData[propName]);
+                });
+                return propData ? `${propName} = ${JSON.stringify(propData)}` : `${propName} = {}`;
+            },
+        });
+    });
+};
+
+class StaticValueExtractorPlugin {
+    constructor({
+        propsToExtract = {
+            trls: {
+                constantName: 'TrlKeys',
+            },
+            features: {
+                constantName: 'Features',
+            },
+        },
+        include = ['/components', '/pages'],
+        basePath,
+        filesArr,
+        appContainerPath,
+        ...otherParams
+    }) {
+        this.options = {};
+
+        if (!basePath) {
+            this.options.basePath = process.cwd();
+        } else {
+            this.options.basePath = basePath;
+        }
+
+        if (!appContainerPath) {
+            this.options.appContainerPath = path.join(this.options.basePath, '/static/js/App.tsx');
+        } else {
+            this.options.appContainerPath = appContainerPath;
+        }
+
+        if (!filesArr) {
+            this.options.filesArr = [path.join(this.options.basePath, '/static/js/pages/*/index.{jsx,tsx}')];
+        } else {
+            this.options.filesArr = filesArr;
+        }
+
+        this.options = { ...this.options, ...otherParams, propsToExtract, include};
+    }
+
+    apply(compiler) {
+        compiler.hooks.done.tap('StaticValueExtractorPlugin', () => {
+            extractStaticValues(this.options);
+        });
+    }
+}
+
+module.exports = StaticValueExtractorPlugin;
