@@ -1,22 +1,29 @@
 # babel-plugin-static-value-extractor
 
+## Сервис содержит webpack обертку:
+
+[Линк на документацию вебпак обёртки.](src/static-value-extractor-plugin.md)
+
 ## Описание
 
-Плагин парсит jsx файлы, и извлекает необходимое значения статических свойств у классов или функций, которые представляют собой объект типа ключ - значение. Value парсятся если они имеют тип String.
-Переданный файл считается рутовым и все его импорты будут также распаршены и сохранены в внешний файл, по 
-необходимому шаблону.
+Плагин парсит jsx, tsx файлы, и извлекает необходимые значения статических свойств у классов или функций, которые представляют собой объект типа ключ - значение. Value парсятся если они имеют тип String.
 
 ```
 extractStaticValueFromGlob([
     файлы для парсинга
 ], {
-    staticPropName: — имя свойства
-    saveFileName: — имя файла
+    propsToExtract: 
+    { 
+        <имя файла> {
+            constantName: <имя свойства>
+        },
+        <...>   
+    }
     saveFilePath: — путь, куда сохранять значения свойств
-    saveFileExt: — расширение файла,
+    saveFileExt: — расширение файлов,
     pathsToReplace: — webpackAliases,
-    include: — массив строк путей файлов для которых нужно извлекать значения статических свойств,
-    template: — функция которая возвращает шаблон контента(string), в качестве аргумента передается объект с ключами названий Файлов и значением массивов извлеченных значений, если не передать контентом сохраненного файла будет JSON представление.',
+    include: — массив строк путей файлов, для которых нужно извлекать значения статических свойств,
+    template: — функция которая возвращает шаблон контента(string), в качестве аргумента передается объект с ключами названий Файлов и значением массивов извлеченных значений, если не передать - контентом сохраненного файла будет JSON представление.',
 });
 ```
 
@@ -28,7 +35,7 @@ extractStaticValueFromGlob([
 ## Установка
 
 ```sh
-$ yarn install babel-plugin-static-value-extractor
+$ yarn add @hh.ru/babel-plugin-static-value-extractor
 ```
 
 ## Запуск тестов
@@ -36,16 +43,3 @@ $ yarn install babel-plugin-static-value-extractor
  ```sh
  $ yarn test
  ```
-
-## Пример использования в Node окружении
-
-```javascript
-const extractStaticValueFromGlob = require('babel-parser-parse-static-trl');
-
-extractStaticValueFromGlob(['/Component/*.jsx'], {
-    staticPropName: 'customProps',
-    saveFileName: 'Component',
-    saveFilePath: 'customPath',
-    saveFileExt: 'js',
-});
-```
