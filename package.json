@@ -17,7 +17,7 @@
     "type": "git",
     "url": "https://github.com/hhru/babel-plugin-static-value-extractor"
   },
-  "private": false,
+  "private": true,
   "scripts": {
     "clean": "rm -rf lib",
     "build": "babel src -d lib",

@@ -1,1 +1,0 @@
-{"Component":["const-customProps-1","const-customProps-2","const-customProps-3","const-customProps-4","customProps-1","customProps-2","customProps-3","AdditionalComponent-2","AdditionalComponent-4"]}
