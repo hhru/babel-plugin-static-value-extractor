@@ -90,65 +90,53 @@ const mergeProps = (propNames, currentList, added) => {
     });
 };
 
-export const extractStaticValueImportedFilesFromFile = (file, opts = {}, cb = noop, importPaths = []) => {
+export const extractStaticValueImportedFilesFromFile = (topLevelFile, opts = {}, cb = noop) => {
     const propNames = Object.keys(opts.propsToExtract);
-    const relativePath = path.relative(opts.basePath, file);
-
     let staticPropsList = propNames.reduce((agg, name) => ({ ...agg, [name]: [] }), {});
-    const { mtimeMs } = fs.statSync(file);
+    
 
-    function _extractStaticValueImportedFilesFromFile(file, opts, importPaths) {
-        if (opts.include && !opts.include.find((includePath) => file.search(includePath) !== -1)) {
-            return;
-        }
-
-        const { mtimeMs } = fs.statSync(file);
-        const relativePath = path.relative(opts.basePath, file);
-
-        let importsDeclarations = [];
-
-        if (cachedFiles[relativePath]) {
-            mergeProps(propNames, staticPropsList, cachedFiles[relativePath].propsList);
-            importsDeclarations = cachedFiles[relativePath].importsDeclarations;
-            cachedFiles[relativePath].reverseImports.push(...importPaths);
+    function _extractStaticValueImportedFilesFromFile(file, opts) {
+        if (cachedFiles[file]) {
+            mergeProps(propNames, staticPropsList, cachedFiles[file].propsList);
+            cachedFiles[file].reverseImports.push(topLevelFile);
         } else {
-            extractStaticValueFromFile(file, opts, (_staticPropsList, _importsDeclarations) => {
+            if (opts.include && !opts.include.find((includePath) => file.search(includePath) !== -1)) {
+                return;
+            }
+            const { mtimeMs } = fs.statSync(file);
+            extractStaticValueFromFile(file, opts, (_staticPropsList, importsDeclarations) => {
                 mergeProps(propNames, staticPropsList, _staticPropsList);
-                importsDeclarations = _importsDeclarations;
-                cachedFiles[relativePath] = {
+                cachedFiles[file] = {
                     cachedMtime: mtimeMs,
                     propsList: _staticPropsList,
                     importsDeclarations,
-                    reverseImports: importPaths,
+                    reverseImports: [topLevelFile],
                 };
             });
         }
 
-        importsDeclarations.forEach((file) => {
-            _extractStaticValueImportedFilesFromFile(file, opts, [...importPaths, relativePath]);
-        });
+        cachedFiles[file].importsDeclarations.forEach((f) => _extractStaticValueImportedFilesFromFile(f, opts));
     }
 
-    if (cachedFiles[relativePath]) {
-        staticPropsList = cachedFiles[relativePath].propsList;
-        cachedFiles[relativePath].reverseImports.push(...importPaths);
-    } else {
-        _extractStaticValueImportedFilesFromFile(file, opts, [...importPaths, relativePath]);
-        cachedFiles[relativePath] = {
+    
+    if (!cachedFiles[topLevelFile]) {
+        const { mtimeMs } = fs.statSync(topLevelFile);
+        _extractStaticValueImportedFilesFromFile(topLevelFile, opts);
+        cachedFiles[topLevelFile] = {
             cachedMtime: mtimeMs,
             propsList: staticPropsList,
             importsDeclarations: [],
-            reverseImports: importPaths,
+            reverseImports: [],
         };
     }
 
     propNames.forEach((name) => {
-        cachedFiles[relativePath].propsList[name] = [...new Set(cachedFiles[relativePath].propsList[name])];
+        cachedFiles[topLevelFile].propsList[name] = [...new Set(cachedFiles[topLevelFile].propsList[name])];
     });
 
-    cb(cachedFiles[relativePath].propsList);
+    cb(cachedFiles[topLevelFile].propsList);
 
-    return cachedFiles[relativePath].propsList;
+    return cachedFiles[topLevelFile].propsList;
 };
 
 export default (globArr, opts = {}) => {
@@ -158,7 +146,7 @@ export default (globArr, opts = {}) => {
     let previousContent;
 
     const staticValues = glob.sync(globArr).reduce((globObject, file) => {
-        const staticValues = extractStaticValueImportedFilesFromFile(file, opts);
+        const staticValues = extractStaticValueImportedFilesFromFile(path.relative(opts.basePath, file), opts);
         const dir = path.parse(file).dir;
         const componentName = dir.slice(dir.lastIndexOf('/') + PATH_DELIMITER_LENGTH);
 
