@@ -9,7 +9,7 @@ let cacheSaveTimeout;
 
 const getCacheFilePath = () => {
     const cacheDir = findCacheDir({ name: 'babel-plugin-static-value-extractor' }) || os.tmpdir();
-    return path.join(cacheDir, 'files.json');
+    return path.join(cacheDir, 'files_v2.json');
 }
 
 export const getPersistentCache = () => {

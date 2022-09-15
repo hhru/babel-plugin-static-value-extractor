@@ -44,31 +44,51 @@ const extractStaticValueFromCode = (code, opts = {}, cb = noop) => {
 
 let cachedFiles = getPersistentCache();
 
+const traceToPageComponent = (file) => {
+    let parents = [file];
+    let nextParents = [];
+    const pageComponents = [];
+
+    while (parents.length > 0) {
+        parents.forEach((file) => {
+            const reverseImports = cachedFiles[file].reverseImports;
+            reverseImports === null ? pageComponents.push(file) : nextParents.push(...reverseImports);
+        });
+
+        parents = [...new Set(nextParents)];
+        nextParents = [];
+    }
+
+    return pageComponents;
+};
+
 export const prepareCache = (opts) => {
     const { basePath } = opts;
 
-    const invalidFiles = [];
+    const invalidFiles = new Set();
     Object.keys(cachedFiles).forEach((filePath) => {
         const { cachedMtime } = cachedFiles[filePath];
         const fullPath = path.join(basePath, filePath);
 
         if (!fs.existsSync(fullPath) || cachedMtime !== fs.statSync(fullPath).mtimeMs) {
-            invalidFiles.push(filePath, ...cachedFiles[filePath].reverseImports);
+            invalidFiles.add(filePath);
         }
     });
 
-    const uniqueFiles = new Set(invalidFiles);
-    uniqueFiles.forEach((filePath) => {
-        delete cachedFiles[filePath];
+    const invalidPageComponents = [];
+    invalidFiles.forEach((filePath) => {
+        cachedFiles[filePath].importsDeclarations.forEach((file) => {
+            if (cachedFiles[file]) {
+                cachedFiles[file].reverseImports = cachedFiles[file].reverseImports.filter((file) => file !== filePath);
+            }
+        });
+        invalidPageComponents.push(...traceToPageComponent(filePath));
     });
+
+    invalidFiles.forEach((filePath) => delete cachedFiles[filePath]);
+    new Set(invalidPageComponents).forEach((filePath) => delete cachedFiles[filePath]);
 
     savePersistentCache(cachedFiles);
-};
-
-const removeDuplicates = (key) => {
-    Object.keys(cachedFiles).forEach((file) => {
-        cachedFiles[file][key] = [...new Set(cachedFiles[file][key])];
-    });
 };
 
 export const extractStaticValueFromFile = (file, opts = {}, cb = noop) => {
@@ -93,12 +113,11 @@ const mergeProps = (propNames, currentList, added) => {
 export const extractStaticValueImportedFilesFromFile = (topLevelFile, opts = {}, cb = noop) => {
     const propNames = Object.keys(opts.propsToExtract);
     let staticPropsList = propNames.reduce((agg, name) => ({ ...agg, [name]: [] }), {});
-    
 
-    function _extractStaticValueImportedFilesFromFile(file, opts) {
+    function _extractStaticValueImportedFilesFromFile(file, opts, parentFile = null) {
         if (cachedFiles[file]) {
             mergeProps(propNames, staticPropsList, cachedFiles[file].propsList);
-            cachedFiles[file].reverseImports.push(topLevelFile);
+            cachedFiles[file].reverseImports && cachedFiles[file].reverseImports.push(parentFile);
         } else {
             if (opts.include && !opts.include.find((includePath) => file.search(includePath) !== -1)) {
                 return;
@@ -110,15 +129,14 @@ export const extractStaticValueImportedFilesFromFile = (topLevelFile, opts = {},
                     cachedMtime: mtimeMs,
                     propsList: _staticPropsList,
                     importsDeclarations,
-                    reverseImports: [topLevelFile],
+                    reverseImports: [parentFile],
                 };
             });
         }
 
-        cachedFiles[file].importsDeclarations.forEach((f) => _extractStaticValueImportedFilesFromFile(f, opts));
+        cachedFiles[file].importsDeclarations.forEach((f) => _extractStaticValueImportedFilesFromFile(f, opts, file));
     }
 
-    
     if (!cachedFiles[topLevelFile]) {
         const { mtimeMs } = fs.statSync(topLevelFile);
         _extractStaticValueImportedFilesFromFile(topLevelFile, opts);
@@ -126,7 +144,7 @@ export const extractStaticValueImportedFilesFromFile = (topLevelFile, opts = {},
             cachedMtime: mtimeMs,
             propsList: staticPropsList,
             importsDeclarations: [],
-            reverseImports: [],
+            reverseImports: null,
         };
     }
 
@@ -174,6 +192,9 @@ export default (globArr, opts = {}) => {
         }
     });
 
-    removeDuplicates('reverseImports');
+    Object.keys(cachedFiles).forEach((file) => 
+        cachedFiles[file].reverseImports =
+            cachedFiles[file].reverseImports === null ? null : [...new Set(cachedFiles[file].reverseImports)]
+    );
     savePersistentCache(cachedFiles);
 };
