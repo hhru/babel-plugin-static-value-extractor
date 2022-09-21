@@ -78,15 +78,24 @@ export const prepareCache = (opts) => {
     const invalidPageComponents = [];
     invalidFiles.forEach((filePath) => {
         cachedFiles[filePath].importsDeclarations.forEach((file) => {
-            if (cachedFiles[file]) {
-                cachedFiles[file].reverseImports = cachedFiles[file].reverseImports.filter((file) => file !== filePath);
+            if (cachedFiles[file] && cachedFiles[file].reverseImports) {
+                cachedFiles[file].reverseImports = cachedFiles[file].reverseImports.filter(
+                    (file) => file !== filePath
+                );
             }
         });
         invalidPageComponents.push(...traceToPageComponent(filePath));
     });
 
+    new Set(invalidPageComponents).forEach((filePath) => {
+        cachedFiles[filePath].importsDeclarations.forEach((file) => {
+            if (cachedFiles[file] && cachedFiles[file].reverseImports) {
+                cachedFiles[file].reverseImports = cachedFiles[file].reverseImports.filter((file) => file !== filePath);
+            }
+        });
+        delete cachedFiles[filePath];
+    });
     invalidFiles.forEach((filePath) => delete cachedFiles[filePath]);
-    new Set(invalidPageComponents).forEach((filePath) => delete cachedFiles[filePath]);
 
     savePersistentCache(cachedFiles);
 };
@@ -192,9 +201,10 @@ export default (globArr, opts = {}) => {
         }
     });
 
-    Object.keys(cachedFiles).forEach((file) => 
-        cachedFiles[file].reverseImports =
-            cachedFiles[file].reverseImports === null ? null : [...new Set(cachedFiles[file].reverseImports)]
+    Object.keys(cachedFiles).forEach(
+        (file) =>
+            (cachedFiles[file].reverseImports =
+                cachedFiles[file].reverseImports === null ? null : [...new Set(cachedFiles[file].reverseImports)])
     );
     savePersistentCache(cachedFiles);
 };
