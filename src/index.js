@@ -62,40 +62,39 @@ const traceToPageComponent = (file) => {
     return pageComponents;
 };
 
+const invalidateFileCache = (filePath, staleCacheEntriesSet) => {
+    const cacheEntry = cachedFiles[filePath];
+    cacheEntry.importsDeclarations.forEach((file) => {
+        if (cachedFiles[file] && cachedFiles[file].reverseImports) {
+            cachedFiles[file].reverseImports = cachedFiles[file].reverseImports.filter((file) => file !== filePath);
+        }
+    });
+    cacheEntry.reverseImports && cacheEntry.reverseImports.forEach((file) => staleCacheEntriesSet.add(file));
+    staleCacheEntriesSet.add(filePath);
+};
+
 export const prepareCache = (opts) => {
     const { basePath } = opts;
 
-    const invalidFiles = new Set();
+    const changedFiles = [];
     Object.keys(cachedFiles).forEach((filePath) => {
         const { cachedMtime } = cachedFiles[filePath];
         const fullPath = path.join(basePath, filePath);
 
         if (!fs.existsSync(fullPath) || cachedMtime !== fs.statSync(fullPath).mtimeMs) {
-            invalidFiles.add(filePath);
+            changedFiles.push(filePath);
         }
     });
 
-    const invalidPageComponents = [];
-    invalidFiles.forEach((filePath) => {
-        cachedFiles[filePath].importsDeclarations.forEach((file) => {
-            if (cachedFiles[file] && cachedFiles[file].reverseImports) {
-                cachedFiles[file].reverseImports = cachedFiles[file].reverseImports.filter(
-                    (file) => file !== filePath
-                );
-            }
-        });
-        invalidPageComponents.push(...traceToPageComponent(filePath));
+    const staleCacheEntries = new Set();
+    const changedPageComponents = [];
+    changedFiles.forEach((filePath) => {
+        invalidateFileCache(filePath, staleCacheEntries);
+        changedPageComponents.push(...traceToPageComponent(filePath));
     });
 
-    new Set(invalidPageComponents).forEach((filePath) => {
-        cachedFiles[filePath].importsDeclarations.forEach((file) => {
-            if (cachedFiles[file] && cachedFiles[file].reverseImports) {
-                cachedFiles[file].reverseImports = cachedFiles[file].reverseImports.filter((file) => file !== filePath);
-            }
-        });
-        delete cachedFiles[filePath];
-    });
-    invalidFiles.forEach((filePath) => delete cachedFiles[filePath]);
+    new Set(changedPageComponents).forEach((filePath) => invalidateFileCache(filePath, staleCacheEntries));
+    staleCacheEntries.forEach((filePath) => delete cachedFiles[filePath]);
 
     savePersistentCache(cachedFiles);
 };
@@ -147,12 +146,10 @@ export const extractStaticValueImportedFilesFromFile = (topLevelFile, opts = {},
     }
 
     if (!cachedFiles[topLevelFile]) {
-        const { mtimeMs } = fs.statSync(topLevelFile);
         _extractStaticValueImportedFilesFromFile(topLevelFile, opts);
         cachedFiles[topLevelFile] = {
-            cachedMtime: mtimeMs,
+            ...cachedFiles[topLevelFile],
             propsList: staticPropsList,
-            importsDeclarations: [],
             reverseImports: null,
         };
     }
