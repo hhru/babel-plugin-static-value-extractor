@@ -1,0 +1,13 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: babel-plugin-static-value-extractor
+  annotations:
+    github.com/project-slug: hhru/babel-plugin-static-value-extractor
+  tags:
+    - backend
+    - js
+spec:
+  type: library
+  lifecycle: production
