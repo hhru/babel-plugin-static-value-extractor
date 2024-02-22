@@ -57,12 +57,14 @@ class StaticValueExtractorPlugin {
             this.options.filesArr = filesArr;
         }
 
-        this.options = { ...this.options, ...otherParams, propsToExtract, include};
+        this.options = { ...this.options, ...otherParams, propsToExtract, include };
     }
 
     apply(compiler) {
-        compiler.hooks.done.tap('StaticValueExtractorPlugin', () => {
-            extractStaticValues(this.options);
+        compiler.hooks.done.tap('StaticValueExtractorPlugin', (stats) => {
+            if (!stats.hasErrors()) {
+                extractStaticValues(this.options);
+            }
         });
     }
 }
