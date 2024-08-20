@@ -44,7 +44,7 @@ const extractStaticValueFromCode = (code, opts = {}, cb = noop) => {
 
 let cachedFiles = getPersistentCache();
 
-const traceToPageComponent = (file) => {
+export const traceToPageComponent = (file) => {
     let parents = [file];
     let nextParents = [];
     const pageComponents = [];
