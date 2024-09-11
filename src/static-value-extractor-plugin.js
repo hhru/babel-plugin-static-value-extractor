@@ -46,13 +46,13 @@ class StaticValueExtractorPlugin {
         }
 
         if (!appContainerPath) {
-            this.options.appContainerPath = path.join(this.options.basePath, '/static/js/App.tsx');
+            this.options.appContainerPath = path.join(this.options.basePath, '/src/app/App.tsx');
         } else {
             this.options.appContainerPath = appContainerPath;
         }
 
         if (!filesArr) {
-            this.options.filesArr = [path.join(this.options.basePath, '/static/js/pages/*/index.{jsx,tsx}')];
+            this.options.filesArr = [path.join(this.options.basePath, '/src/pages/*/index.{jsx,tsx}')];
         } else {
             this.options.filesArr = filesArr;
         }

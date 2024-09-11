@@ -20,10 +20,10 @@ propsToExtract:
 basePath: process.cwd()
 корень пакета, откуда запускается плагин.
  
-appContainerPath: basePath + '/static/js/App.tsx'
+appContainerPath: basePath + '/src/app/App.tsx'
 родительский компонент приложения.
 
-filesArr: basePath + '/static/js/pages/*/index.{jsx,tsx}'
+filesArr: basePath + '/src/pages/*/index.{jsx,tsx}'
 файлы для парсинга
 
 include:['/components', '/pages']
@@ -53,8 +53,8 @@ plugins: [
             pathsToReplace: webpackAliases,
             include: ['/components', '/pages', '/proxyComponents'],
             filesArr: [
-                path.resolve(__dirname, '../static/js/pages/*/index.{jsx,tsx}'),
-                path.resolve(__dirname, '../static/js/proxyComponents/*/index.{jsx,tsx}'),
+                path.resolve(__dirname, '../src/pages/*/index.{jsx,tsx}'),
+                path.resolve(__dirname, '../src/proxyComponents/*/index.{jsx,tsx}'),
             ],
     }),
     <...>
