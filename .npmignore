@@ -1,7 +1,0 @@
-node_modules
-*.log
-src
-test
-README.md
-yarn.lock
-.travis.yml

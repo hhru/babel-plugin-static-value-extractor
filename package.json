@@ -17,7 +17,7 @@
     "type": "git",
     "url": "https://github.com/hhru/babel-plugin-static-value-extractor"
   },
-  "private": false,
+  "private": true,
   "scripts": {
     "clean": "rm -rf lib",
     "build": "babel src -d lib",
@@ -26,7 +26,9 @@
     "prepublish": "yarn clean && yarn build",
     "release": "npm publish --access=public"
   },
-  "keywords": ["static-value-extractor"],
+  "keywords": [
+    "static-value-extractor"
+  ],
   "dependencies": {
     "@babel/core": "^7.24.7",
     "find-cache-dir": "^3.3.1",
