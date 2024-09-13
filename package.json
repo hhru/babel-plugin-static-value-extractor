@@ -1,6 +1,6 @@
 {
   "name": "@hh.ru/babel-plugin-static-value-extractor",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "main": "lib/index.js",
   "devDependencies": {
     "@babel/cli": "^7.5.0",
@@ -26,7 +26,9 @@
     "prepublish": "yarn clean && yarn build",
     "release": "npm publish --access=public"
   },
-  "keywords": ["static-value-extractor"],
+  "keywords": [
+    "static-value-extractor"
+  ],
   "dependencies": {
     "@babel/core": "^7.24.7",
     "find-cache-dir": "^3.3.1",
