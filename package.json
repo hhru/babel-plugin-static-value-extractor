@@ -20,7 +20,7 @@
   "private": false,
   "scripts": {
     "clean": "rm -rf lib",
-    "build": "babel src -d lib",
+    "build": "./node_modules/@babel/cli/bin/babel.js src -d lib",
     "test": "mocha --require @babel/register",
     "test:watch": "yarn run test -- --watch",
     "prepublish": "yarn clean && yarn build",
