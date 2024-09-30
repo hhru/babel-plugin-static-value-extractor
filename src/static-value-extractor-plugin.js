@@ -6,7 +6,17 @@ const extractStaticValues = ({ saveFilePath, filesArr, appContainerPath, basePat
     const settings = { basePath, ...otherSettings };
     prepareCache(settings);
 
-    extractStaticValueImportedFilesFromFile(appContainerPath, settings, (appContainerData) => {
+    console.log('preparing with settings', settings)
+    const newSettings = {...settings}
+    newSettings.include = [
+        'src/app/App',
+        'src/components',
+        'src/pages',
+        'src/hooks',
+        'src/widgets',
+        '/front-static-app',
+    ]
+    extractStaticValueImportedFilesFromFile(appContainerPath, newSettings, (appContainerData) => {
         extractStaticValueFromGlob(filesArr, {
             ...settings,
             saveFilePath,

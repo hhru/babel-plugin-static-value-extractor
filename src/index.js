@@ -119,17 +119,22 @@ const mergeProps = (propNames, currentList, added) => {
 };
 
 export const extractStaticValueImportedFilesFromFile = (topLevelFile, opts = {}, cb = noop) => {
+    console.log('---')
+    console.log('extractStaticValueImportedFilesFromFile', topLevelFile)
     const propNames = Object.keys(opts.propsToExtract);
     let staticPropsList = propNames.reduce((agg, name) => ({ ...agg, [name]: [] }), {});
 
     function _extractStaticValueImportedFilesFromFile(file, opts, parentFile = null) {
         if (cachedFiles[file]) {
+            console.log('_extractStaticValueImportedFilesFromFile', file, 'cached')
             mergeProps(propNames, staticPropsList, cachedFiles[file].propsList);
             cachedFiles[file].reverseImports && cachedFiles[file].reverseImports.push(parentFile);
         } else {
             if (opts.include && !opts.include.find((includePath) => file.search(includePath) !== -1)) {
+                console.log('_extractStaticValueImportedFilesFromFile', file, 'filtered')
                 return;
             }
+            console.log('_extractStaticValueImportedFilesFromFile', file, 'passed')
             const { mtimeMs } = fs.statSync(file);
             extractStaticValueFromFile(file, opts, (_staticPropsList, importsDeclarations) => {
                 mergeProps(propNames, staticPropsList, _staticPropsList);
@@ -152,6 +157,8 @@ export const extractStaticValueImportedFilesFromFile = (topLevelFile, opts = {},
             propsList: staticPropsList,
             reverseImports: null,
         };
+    } else {
+        console.log('file cached')
     }
 
     propNames.forEach((name) => {
@@ -168,6 +175,8 @@ export default (globArr, opts = {}) => {
     const saveFilePath = path.resolve(opts.saveFilePath);
     const PATH_DELIMITER_LENGTH = 1;
     let previousContent;
+
+    console.log('hello!', opts);
 
     const staticValues = glob.sync(globArr).reduce((globObject, file) => {
         const staticValues = extractStaticValueImportedFilesFromFile(path.relative(opts.basePath, file), opts);
